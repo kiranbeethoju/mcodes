@@ -6,7 +6,7 @@ def resolve_cpt_codes(medications: List[Dict], extracted_codes: List[str]) -> Li
     Resolve CPT code conflicts and apply replacement rules
     
     Args:
-        medications: List of medication administration records
+        medications: List of medication administration records with duration field
         extracted_codes: List of CPT codes initially extracted by GPT
     
     Returns:
@@ -47,12 +47,6 @@ def resolve_cpt_codes(medications: List[Dict], extracted_codes: List[str]) -> Li
             '96360': 30   # Hydration must be >= 30 mins
         }
     }
-
-    def get_duration(med: Dict) -> float:
-        """Calculate duration in minutes for a medication"""
-        start = datetime.strptime(med['start_datetime'], '%Y-%m-%d %H:%M:%S')
-        stop = datetime.strptime(med['stop_datetime'], '%Y-%m-%d %H:%M:%S')
-        return (stop - start).total_seconds() / 60
 
     def should_remove_code(code: str, all_codes: List[str], med_duration: float) -> bool:
         """Check if a code should be removed based on rules"""
@@ -112,7 +106,7 @@ def resolve_cpt_codes(medications: List[Dict], extracted_codes: List[str]) -> Li
     
     # First pass: Collect valid codes based on time requirements
     for med in medications:
-        duration = get_duration(med)
+        duration = med['duration']  # Use provided duration instead of calculating
         med_codes = [code for code in extracted_codes if not should_remove_code(code, extracted_codes, duration)]
         final_codes.update(med_codes)
         if med_codes:
@@ -143,16 +137,19 @@ if __name__ == "__main__":
             'med_name': 'Push Med 1',
             'start_datetime': '2024-01-01 10:00:00',
             'stop_datetime': '2024-01-01 10:05:00',
+            'duration': 5
         },
         {
             'med_name': 'Push Med 2',
             'start_datetime': '2024-01-01 10:10:00',
             'stop_datetime': '2024-01-01 10:14:00',
+            'duration': 4
         },
         {
             'med_name': 'Hydration',
             'start_datetime': '2024-01-01 10:15:00',
             'stop_datetime': '2024-01-01 11:30:00',
+            'duration': 75
         }
     ]
     
